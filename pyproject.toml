@@ -1,0 +1,25 @@
+[project]
+name = "telnet-proxy-server"
+version = "0.1.0"
+description = "WebSocket to Telnet proxy server that allows web clients to connect to Telnet servers"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+dependencies = [
+    "asyncio>=3.4.3",
+    "websockets>=15.0.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/chrishayuk/telnet-proxy-server"
+Issues = "https://github.com/chrishayuk/telnet-proxy-server/issues"
+
+[project.scripts]
+telnet-proxy-server = "telnet_proxy.main:main"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.hatch.build.targets.wheel]
+packages = ["telnet_proxy"]
