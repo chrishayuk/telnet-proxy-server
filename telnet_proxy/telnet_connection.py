@@ -29,6 +29,15 @@ class TelnetConnection:
         self.reader = None
         self.writer = None
         self.target = f"{host}:{port}"
+        
+        # Configure the websocket for binary mode
+        try:
+            # Some websockets implementations might not support this directly
+            # If this fails, the conversion will happen automatically in the handler
+            if hasattr(websocket, 'binary_type'):
+                websocket.binary_type = 'arraybuffer'
+        except Exception as e:
+            logger.warning(f"Client {self.client_id}: Could not set binary mode: {e}")
     
     async def connect(self, timeout=10):
         """
@@ -75,10 +84,24 @@ class TelnetConnection:
         """Forward messages from WebSocket to Telnet."""
         try:
             async for message in self.websocket:
-                if len(message) > MAX_MESSAGE_LENGTH:
-                    logger.warning(f"Client {self.client_id}: Message too long. Truncating.")
-                    message = message[:MAX_MESSAGE_LENGTH]
-                self.writer.write(message.encode() + b'\n')
+                # Check for message type - handle both text and binary messages
+                if isinstance(message, bytes):
+                    # Binary data received directly
+                    binary_data = message
+                    logger.debug(f"Client {self.client_id}: Received binary data from WebSocket: {len(binary_data)} bytes")
+                else:
+                    # Text data received (most likely from JavaScript)
+                    # Convert to binary without adding newline
+                    binary_data = message.encode('utf-8')
+                    logger.debug(f"Client {self.client_id}: Received text data from WebSocket: {message[:50]}...")
+                
+                # Enforce maximum message length
+                if len(binary_data) > MAX_MESSAGE_LENGTH:
+                    logger.warning(f"Client {self.client_id}: Message too long ({len(binary_data)} bytes). Truncating.")
+                    binary_data = binary_data[:MAX_MESSAGE_LENGTH]
+                
+                # Send binary data to telnet server without automatically adding newline
+                self.writer.write(binary_data)
                 await self.writer.drain()
         except websockets.exceptions.ConnectionClosed:
             logger.info(f"Client {self.client_id}: WebSocket closed (ws_to_telnet).")
@@ -88,13 +111,34 @@ class TelnetConnection:
     async def telnet_to_ws(self):
         """Forward messages from Telnet to WebSocket."""
         try:
+            buffer_size = 1024  # Use a reasonable buffer size
             while True:
-                data = await asyncio.wait_for(self.reader.readline(), timeout=30)
+                # Read raw binary data instead of lines
+                data = await asyncio.wait_for(self.reader.read(buffer_size), timeout=30)
                 if not data:
                     logger.info(f"Client {self.client_id}: Telnet connection closed by remote host.")
                     await self.websocket.send("[Telnet connection closed]")
                     break
-                await self.websocket.send(data.decode('utf8', errors='replace'))
+                
+                # Log data for debugging (only first 50 bytes to avoid clutter)
+                logger.debug(f"Client {self.client_id}: Received from telnet: {data[:50]} ({len(data)} bytes)")
+                
+                # Send raw binary data to WebSocket
+                try:
+                    # Attempt to send as binary data
+                    await self.websocket.send(data)
+                except Exception as e:
+                    # If binary send fails, attempt to send as text with byte representation
+                    logger.warning(f"Client {self.client_id}: Binary send failed, trying fallback: {e}")
+                    try:
+                        # Fallback: try to decode with lenient error handling
+                        text_data = data.decode('utf-8', errors='replace')
+                        await self.websocket.send(text_data)
+                    except Exception as text_error:
+                        logger.error(f"Client {self.client_id}: Text fallback failed: {text_error}")
+                        # If all else fails, close the connection
+                        break
+                
         except asyncio.TimeoutError:
             logger.warning(f"Client {self.client_id}: Telnet read timed out.")
             await self.websocket.send("[Telnet read timed out]")
