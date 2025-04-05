@@ -1,0 +1,74 @@
+servers:
+  # Telnet protocol proxy server
+  telnet_proxy:
+    host: "0.0.0.0"
+    port: 8123
+    transport: "telnet"
+    handler_class: "telnet_proxy_server.proxy_handler:TelnetProxyHandler"
+    max_connections: 100
+    connection_timeout: 300
+    default_target: ""  # Optional default target in format "host:port"
+    
+  # TCP protocol proxy server
+  tcp_proxy:
+    host: "0.0.0.0"
+    port: 8124
+    transport: "tcp"
+    handler_class: "telnet_proxy_server.proxy_handler:TelnetProxyHandler"
+    max_connections: 100
+    connection_timeout: 300
+    default_target: ""  # Optional default target in format "host:port"
+    
+  # WebSocket protocol proxy server
+  websocket_proxy:
+    host: "0.0.0.0"
+    port: 8125
+    transport: "websocket"         # Regular WebSocket mode with proper handshake and text messaging
+    ws_path: "/ws"
+    handler_class: "telnet_proxy_server.proxy_handler:TelnetProxyHandler"
+    use_ssl: false
+    ssl_cert: ""
+    ssl_key: ""
+    allow_origins:
+      - "*"
+    ping_interval: 30
+    ping_timeout: 10
+    max_connections: 100
+    connection_timeout: 300
+    default_target: ""  # Optional default target in format "host:port"
+    # Path mappings for specific servers
+    path_mappings:
+      "/time": "time.nist.gov:13"
+      "/bbs": "bbs.example.com:23"
+      "/mud": "game.example.com:4000"
+      "/chat": "chat.example.com:6667"
+    # Monitoring configuration
+    enable_monitoring: true
+    monitor_path: "/monitor"
+    
+  # WebSocket over Telnet protocol proxy server
+  ws_telnet_proxy:
+    host: "0.0.0.0"
+    port: 8126
+    transport: "ws_telnet"         # WebSocket over Telnet: performs Telnet negotiation over the WS transport
+    ws_path: "/ws_telnet"
+    handler_class: "telnet_proxy_server.proxy_handler:TelnetProxyHandler"
+    use_ssl: false
+    ssl_cert: ""
+    ssl_key: ""
+    allow_origins:
+      - "*"
+    ping_interval: 30
+    ping_timeout: 10
+    max_connections: 100
+    connection_timeout: 300
+    default_target: ""  # Optional default target in format "host:port"
+    # Path mappings for specific servers
+    path_mappings:
+      "/time": "time.nist.gov:13"
+      "/bbs": "bbs.example.com:23"
+      "/mud": "game.example.com:4000"
+      "/chat": "chat.example.com:6667"
+    # Monitoring configuration
+    enable_monitoring: true
+    monitor_path: "/monitor"
