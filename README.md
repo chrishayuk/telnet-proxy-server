@@ -44,6 +44,9 @@ telnet-proxy-server --port 8123 --protocol telnet --default-target time.nist.gov
 
 # WebSocket proxy on port 8125
 telnet-proxy-server --port 8125 --protocol websocket --ws-path /ws
+
+# Using Python module directly with uv
+uv run -m telnet_proxy_server.server --protocol websocket --port 8125 --default-target time.nist.gov:13
 ```
 
 ### Connect to services
@@ -58,6 +61,30 @@ telnet localhost 8123
 ```
 
 ## Client Examples
+
+### Web Client - xterm-web
+
+For a ready-to-use web terminal client, you can use [xterm-web](https://github.com/chrishayuk/xterm-web), which provides:
+
+- Browser-based terminal connecting to remote servers via a WebSocket proxy
+- Terminal emulation with xterm.js
+- Support for any text-based TCP protocol (Telnet, SMTP, POP3, etc.)
+- Command history and local echo toggle
+- Responsive design
+
+To get started with xterm-web:
+
+```bash
+# Clone the repository
+git clone https://github.com/chrishayuk/xterm-web.git
+cd xterm-web
+
+# Start a simple web server
+npx http-server -c -1
+
+# Open http://localhost:8080 in your browser
+# Configure it to connect to your telnet-proxy-server
+```
 
 ### Traditional Telnet Clients
 
