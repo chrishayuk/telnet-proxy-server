@@ -17,10 +17,8 @@ from chuk_protocol_server.servers.ws_telnet_server import WSTelnetServer
 
 from telnet_proxy_server.proxy_handler import TelnetProxyHandler
 
-# Configure logging for this module
 logger = logging.getLogger('telnet-proxy-main')
 
-# ASCII art banner
 ASCII_BANNER = r"""
  *       *            _                               
 | |     | |          | |                              
@@ -76,19 +74,17 @@ def parse_arguments():
                         help="Connection timeout in seconds (default: 300)")
     # We override --log-level by forcing DEBUG
     parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], 
-                        default='DEBUG', help="Logging level (forced to DEBUG in code below)")
+                        default='INFO', help="Logging level (forced to DEBUG in code below)")
     
     return parser.parse_args()
 
 def display_banner():
-    """Display the ASCII banner and return True."""
+    """Display the ASCII banner."""
     print(ASCII_BANNER)
     return True
 
 def parse_path_mappings(mappings_list):
-    """
-    Parse path mappings from command line arguments.
-    """
+    """Parse path mappings from command line arguments."""
     path_mappings = {}
     for mapping in mappings_list:
         try:
@@ -101,35 +97,19 @@ def parse_path_mappings(mappings_list):
     return path_mappings
 
 async def start_server(args):
-    """
-    Start the appropriate server based on protocol.
-    """
-    # Force DEBUG logging
+    """Start the appropriate server based on protocol."""
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=args.log_level.upper(),
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
     
-    # Show banner
     display_banner()
     
-    # Parse path mappings
     path_mappings = parse_path_mappings(args.path_mapping)
     if path_mappings:
         logger.info(f"Path mappings: {path_mappings}")
     
-    # If we're using a websocket-based protocol, patch the path validation
-    # so that any connection that starts with the fixed prefix is accepted.
-    def patched_validate_path(self, raw_path):
-        expected = self.path or ''
-        if raw_path.startswith(expected):
-            logger.debug(f"Patched validate: raw_path '{raw_path}' accepted (expected prefix '{expected}')")
-            return True
-        else:
-            logger.warning(f"Patched validate: rejected path '{raw_path}', does not start with expected prefix '{expected}'")
-            return False
-
     server = None
     if args.protocol == 'telnet':
         server = TelnetServer(
@@ -152,10 +132,6 @@ async def start_server(args):
         logger.info(f"Starting Telnet Proxy Server (TCP protocol) on {args.host}:{args.port}")
         
     elif args.protocol == 'websocket':
-        # Patch the validate_path method for PlainWebSocketServer
-        PlainWebSocketServer.validate_path = patched_validate_path
-
-        # Build kwargs for PlainWebSocketServer
         kwargs = {
             'host': args.host,
             'port': args.port,
@@ -174,21 +150,15 @@ async def start_server(args):
         else:
             kwargs['path'] = args.ws_path
             logger.info(f"Fixed WebSocket path = {args.ws_path}")
-
         server = PlainWebSocketServer(**kwargs)
         logger.info(f"Starting Telnet Proxy Server (WebSocket protocol) on {args.host}:{args.port}")
         
     elif args.protocol == 'ws_telnet':
-        # Patch the validate_path method for WSTelnetServer
-        WSTelnetServer.validate_path = patched_validate_path
-
+        ws_telnet_path = None if args.allow_any_path else args.ws_path
         if args.allow_any_path:
-            ws_telnet_path = None
             logger.info("Allowing connections on ANY path for ws_telnet (dynamic).")
         else:
-            ws_telnet_path = args.ws_path
             logger.info(f"Fixed ws_telnet path = {args.ws_path}")
-        
         server = WSTelnetServer(
             host=args.host,
             port=args.port,
@@ -204,12 +174,9 @@ async def start_server(args):
         )
         logger.info(f"Starting Telnet Proxy Server (WebSocket-Telnet protocol) on {args.host}:{args.port}")
     
-    setattr(server, 'transport', args.protocol)
-
-    if args.max_connections:
-        setattr(server, 'max_connections', args.max_connections)
-    if args.connection_timeout:
-        setattr(server, 'connection_timeout', args.connection_timeout)
+    server.transport = args.protocol
+    server.max_connections = args.max_connections
+    server.connection_timeout = args.connection_timeout
 
     if args.default_target:
         server.default_target = args.default_target
@@ -230,16 +197,13 @@ async def start_server(args):
 def main():
     """Main entry point for the telnet proxy service."""
     args = parse_arguments()
-    
     try:
-        # Attempt uvloop
         try:
             import uvloop
             uvloop.install()
             logger.info("Using uvloop for improved performance")
         except ImportError:
             logger.info("uvloop not available, using standard asyncio event loop")
-        
         asyncio.run(start_server(args))
     except KeyboardInterrupt:
         print("\nTelnet Proxy is shutting down gracefully...")

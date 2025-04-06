@@ -12,16 +12,15 @@ wheels = [
 
 [[package]]
 name = "chuk-protocol-server"
-version = "0.1.6"
+version = "0.1.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "asyncio" },
     { name = "pyyaml" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9b/4d/8483ad4000dcd4f531488e730a3ce37c04a51ad2313fd8cb9483be6698cb/chuk_protocol_server-0.1.6.tar.gz", hash = "sha256:6f503cfa124c791d919aa1ec46772f44588f6489916a9a4e9be5a41230abae24", size = 51627 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/61/58093ac448f808aaed4f45845a663931c9080b32fe59e2e236dd18b15831/chuk_protocol_server-0.1.6-py3-none-any.whl", hash = "sha256:f3170426940ff2411db80fa2cee67b33ffc16b7ee6346ca002949f059cad3f31", size = 67138 },
+    { url = "https://files.pythonhosted.org/packages/aa/7e/c7c1df3bdb81ed654ad562eb19f694f1dc099f20c20452fae12d11eab17c/chuk_protocol_server-0.1.10-py3-none-any.whl", hash = "sha256:a81e324cbb291baf3b8cc031f3dbe0cb936be31258dd8adbe712f463c474ee7c", size = 67059 },
 ]
 
 [[package]]
@@ -72,7 +71,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "asyncio", specifier = ">=3.4.3" },
-    { name = "chuk-protocol-server", specifier = ">=0.1.6" },
+    { name = "chuk-protocol-server", specifier = ">=0.1.10" },
     { name = "websockets", specifier = ">=15.0.1" },
 ]
 
